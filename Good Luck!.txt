@@ -1,0 +1,22 @@
+The code consists of 4 parts and is operated by the main code.
+
+1. Wind field creation.
+2. Execution of FAST for Out of plane bending moments, which are post-processed with MLife for DEL values
+3. Creation of DEL graphs (not important)
+4. Optimization of a WF using GT
+
+Currently the LUT is build for 3 parameters, Center to center distance, inflow velocity and wake diameter.
+
+The code is messy but does the job.
+
+In the FAST main file you choose between CPC and IPC.
+
+THe name of the simulation sequence is important! One now have recieved the files for running an optimization. Not included are the FAST files and Wind Files, these are to large.
+
+To run optimization
+
+1. NO_IPC_FINAL or 1P_IPC_FINAL or 2p_IPC_FINAL
+2. n
+3. n
+3. y
+4. n
