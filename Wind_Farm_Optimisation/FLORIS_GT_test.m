@@ -1,7 +1,4 @@
-function [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,Aol,Oup,Ic] = FLORIS_GT_test(U,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y)
-         
-    global N D 
-            
+function [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,Aol,Oup,Ic] = FLORIS_GT_test(U,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D)            
 %% Wake Deflection
         %Determine the wake deflection     
         Ct = 4*ai*(1-ai);       % Power coefficient
@@ -50,18 +47,18 @@ function [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,Aol,Oup,Ic] = FLORIS_GT_test(U,yaw,rho,ai,
     Aol=zeros(N,N,3);
     for i= 1:N
         for j=i+1:N
-        Aol(i,j,3)=Overlap(yw,Dw,X,Y,i,j,3);
+        Aol(i,j,3)=Overlap(yw,Dw,X,Y,i,j,3,D);
           if Aol(i,j,3) == 0
              Aol(i,j,2)=0;
              Aol(i,j,1)=0;
              continue
           end
-           Aol(i,j,2)=Overlap(yw,Dw,X,Y,i,j,2);
+           Aol(i,j,2)=Overlap(yw,Dw,X,Y,i,j,2,D);
 %           if Aol(i,j,2) == 0
 %              Aol(i,j,1)=0;
 %              continue
 %           end
-          Aol(i,j,1)=Overlap(yw,Dw,X,Y,i,j,1);
+          Aol(i,j,1)=Overlap(yw,Dw,X,Y,i,j,1,D);
 %           if Aol(i,j,1) == 0;
 %              continue
 %           end

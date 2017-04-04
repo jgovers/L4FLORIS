@@ -1,6 +1,5 @@
-function [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary) 
-    global N D U T dt
-    global Dw3_vector C2C_vector Ueff_vector sim_name
+function [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,...
+                            N, D, U, T, dt,Dw3_vector, C2C_vector, Ueff_vector, sim_name)
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%% Uniform wind field %%%%%%%%%%%%

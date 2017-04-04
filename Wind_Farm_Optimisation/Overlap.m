@@ -1,4 +1,4 @@
-function [ Aol ] = Overlap( Yw,Dw,X,Y,i,j,q )
+function [ Aol ] = Overlap( Yw,Dw,X,Y,i,j,q,D )
 % Surface overlap per turbine
 %-------------------------------------------------------------------------%
 % Variables:
@@ -9,7 +9,6 @@ function [ Aol ] = Overlap( Yw,Dw,X,Y,i,j,q )
 % Upstream turbine index(i) downstream turbine index(j), 
 % Wake region index 1,2 or 3 (q)
 %-------------------------------------------------------------------------%
-global D 
 
 % Wake centerline offset distance.
 d = abs(Y(j)-Yw(i,j));

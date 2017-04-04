@@ -1,6 +1,14 @@
+clear all; close all; clc;
 nargin = 0; % Placeholder for "function" file
 if nargin <= 0
     sim_name               = '2p_IPC_FINAL';
+    D = 129;           % Rotor Diameter        [m]
+    U = 10;            % Ambient Wind speed    [m/s]
+    T = 100+100+76;    % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
+    dt = 0.125;        % Time step size        [-]
+    Dw3_vector = D+25:25:200; % Discretization of wake diameter of region 3
+    C2C_vector = -230:10:230; % Discretization of Center 2 Center distance
+    Ueff_vector = [0.8 0.6];  % Discretization of effective wind velocity
 end;
 if nargin <= 1
     optimStruct.optConst   = 1;     % Weighting factor                                                  
@@ -28,15 +36,12 @@ if nargin <= 2
     modelStruct.a_U  = 5;                   % Gebraad                       [-]
     modelStruct.b_U  = 1.66;                % Gebraad                       [-]
     
-    modelStruct.windSpeed         = 10.             % Wind speed in [m/s]
-    modelStruct.windDirection     = 0.              % Wind direction nominal (degrees)
-    modelStruct.windUncertainty   = [-16:4:16]      % Additional wind disturbance range (symmetric)
+    modelStruct.windSpeed         = 10.;            % Wind speed in [m/s]
+    modelStruct.windDirection     = 0.;             % Wind direction nominal (degrees)
+    modelStruct.windUncertainty   = [-16:4:16];     % Additional wind disturbance range (symmetric)
 end;
 
 %% Initialize GT-theory parameters
-global T dt
-global Dw3_vector C2C_vector Ueff_vector
-
 load(['Wind_Field_Generation\Outputs\',sim_name,'\Ueff\Ueff_matrix.mat'])
 load(['FAST_Analysis\Outputs\',sim_name,'\DEL_and_SIM\DEL_summary_',num2str(sim_name),'.mat'])
 
@@ -115,8 +120,8 @@ for jj = 1:length(windInflowDistribution)
     Y = Y - min(Y);                     % Discarding non-used Y
     
     % Power and loads
-    [ P,Ptot,~,Dw,Ut,yw,Dwn,Up,I,~,~,Ic] = FLORIS_GT_test(windSpeed,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y);
-    [DELtot data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary);
+    [ P,Ptot,~,Dw,Ut,yw,Dwn,Up,I,~,~,Ic] = FLORIS_GT_test(windSpeed,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D);
+    [DELtot, data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,U,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
     store_Ptot(1,jj)   = Ptot;
     store_DELtot(1,jj) = DELtot;
     
@@ -180,8 +185,8 @@ for k = 2:iterations            % k is the number of iterations
         X = X - min(X);                     % Discarding non-used X
         Y = Y - min(Y); %+.5*D;             % Discarding non-used Y
         %% Calculate amount of Power and Load
-        [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,~,~,Ic] = FLORIS_GT_test(windSpeed,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y);
-        [DELtot data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary);
+        [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,~,~,Ic] = FLORIS_GT_test(windSpeed,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D);
+        [DELtot data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,U,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
         if windDir == windDirection % nominal case
             PDELtotnom = (Ptot/Pnom(1))-optConst*(DELtot/DELnom(1));
         end;
