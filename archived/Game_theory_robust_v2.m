@@ -1,13 +1,11 @@
-%clear all; close all; clc;
-nargin = 0; % Placeholder for "function" file
+function[yaw_opt,J_Pws_opt,J_DEL_opt,J_sum_opt] = optimizeL4FLORIS( simStruct, optimStruct, modelStruct )
 if nargin <= 0
-    sim_name = '2p_IPC_FINAL';
-    D = 129;           % Rotor Diameter        [m]
-    T = 100+100+76;    % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
-    dt = 0.125;        % Time step size        [-]
-    Dw3_vector = D+25:25:200; % Discretization of wake diameter of region 3
-    C2C_vector = -230:10:230; % Discretization of Center 2 Center distance
-    Ueff_vector = [0.8 0.6];  % Discretization of effective wind velocity
+    simStruct.sim_name = '2p_IPC_FINAL';
+    simStruct.T = 100+100+76;           % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
+    simStruct.dt = 0.125;               % Time step size        [-]
+    simStruct.Dw3_vector = 126.4+25:25:200; % Discretization of wake diameter of region 3
+    simStruct.C2C_vector = -230:10:230; % Discretization of Center 2 Center distance
+    simStruct.Ueff_vector = [0.8 0.6];  % Discretization of effective wind velocity
 end;
 if nargin <= 1
     optimStruct.optConst   = 1;     % Weighting factor                                                  
@@ -41,14 +39,18 @@ if nargin <= 2
     modelStruct.windUncertainty   = [-16:4:16];     % Additional wind disturbance range (symmetric)
 end;
 
-%% Initialize GT-theory parameters
-load(['Wind_Field_Generation\Outputs\',sim_name,'\Ueff\Ueff_matrix.mat'])
-load(['FAST_Analysis\Outputs\',sim_name,'\DEL_and_SIM\DEL_summary_',num2str(sim_name),'.mat'])
-
 % Optimization parameters
 optConst   = optimStruct.optConst;
 iterations = optimStruct.iterations;
 alpha      = optimStruct.alpha;
+
+% Simulation parameters
+sim_name    = simStruct.sim_name;
+T           = simStruct.T;           % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
+dt          = simStruct.dt;          % Time step size        [-]
+Dw3_vector  = simStruct.Dw3_vector;  % Discretization of wake diameter of region 3
+C2C_vector  = simStruct.C2C_vector;  % Discretization of Center 2 Center distance
+Ueff_vector = simStruct.Ueff_vector; % Discretization of effective wind velocity
 
 % Import model settings
 Xc     = modelStruct.Xc;
@@ -77,6 +79,10 @@ windUncertainty= modelStruct.windUncertainty; % Wind direction disturbances
 % Derive remaining necessary parameters
 N      = length(Xc);
 A      = 0.5*pi*(D/2)^2; 
+
+% Load DEL tables
+load(['Wind_Field_Generation\Outputs\',sim_name,'\Ueff\Ueff_matrix.mat'])
+load(['FAST_Analysis\Outputs\',sim_name,'\DEL_and_SIM\DEL_summary_',num2str(sim_name),'.mat'])
 
 % Initialize FLORIS matrices
 P    = zeros(N,1);          % Power                         [W] 
@@ -195,9 +201,10 @@ end
 i = N;
 plot([(X(i)-.5*D*sin(yaw(i))) (X(i)+.5*D*sin(yaw(i)))], [(Y(i)+.5*D*cos(yaw(i))) (Y(i)-.5*D*cos(yaw(i)))], 'k', 'LineWidth', 2)
 
-scatter(X, Y)                                       %turbine position
+scatter(X, Y);                                       %turbine position
 labels = num2str([1:N]', '%d');                     %turbine index
 text(X+0.05, Y, labels, 'VerticalAlignment','bottom')    
 ylabel('Y-Distance [m]')
 xlabel('X-Distance [m]')
 title('Gemini Wind Farm')
+end
