@@ -1,9 +1,8 @@
-clear all; close all; clc;
+%clear all; close all; clc;
 nargin = 0; % Placeholder for "function" file
 if nargin <= 0
-    sim_name               = '2p_IPC_FINAL';
+    sim_name = '2p_IPC_FINAL';
     D = 129;           % Rotor Diameter        [m]
-    U = 10;            % Ambient Wind speed    [m/s]
     T = 100+100+76;    % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
     dt = 0.125;        % Time step size        [-]
     Dw3_vector = D+25:25:200; % Discretization of wake diameter of region 3
@@ -36,6 +35,7 @@ if nargin <= 2
     modelStruct.a_U  = 5;                   % Gebraad                       [-]
     modelStruct.b_U  = 1.66;                % Gebraad                       [-]
     
+    modelStruct.D                 = 126.4;          % Rotor diameter [m]
     modelStruct.windSpeed         = 10.;            % Wind speed in [m/s]
     modelStruct.windDirection     = 0.;             % Wind direction nominal (degrees)
     modelStruct.windUncertainty   = [-16:4:16];     % Additional wind disturbance range (symmetric)
@@ -53,6 +53,7 @@ alpha      = optimStruct.alpha;
 % Import model settings
 Xc     = modelStruct.Xc;
 Yc     = modelStruct.Yc;
+D      = modelStruct.D;
 yawmin = modelStruct.minYaw;
 yawmax = modelStruct.maxYaw;
 
@@ -73,9 +74,8 @@ windSpeed      = modelStruct.windSpeed;       % Static Wind Speed [m/s]
 windDirection  = modelStruct.windDirection;   % Nominal wind direction
 windUncertainty= modelStruct.windUncertainty; % Wind direction disturbances
 
-% Derive other parameters
+% Derive remaining necessary parameters
 N      = length(Xc);
-D      = 126.4;
 A      = 0.5*pi*(D/2)^2; 
 
 % Initialize FLORIS matrices
@@ -89,149 +89,77 @@ n    = linspace(1,N,N);     % ?                             [?]
 windInflowDistribution   = windDirection+windUncertainty;
 weightsInflowUncertainty = gaussianWindDistribution(windInflowDistribution);
  
-% Initialize GT-theory matrices    
-[Pdir,DELdir,PDELdir]                                 = deal(zeros(1,1));
-[Pdirall,Pdirbaseall,Pnombaseall]                     = deal(zeros(iterations,1));
-[DELdirall,DELdirbaseall,DELnombaseall]               = deal(zeros(iterations,1));
-[PDELdirall,PDELdirbaseall,PDELtotnom,PDELnombaseall] = deal(zeros(iterations,1));
-
+% Initialize empty GT-theory matrices    
+[J_Pws_opt,J_DEL_opt,J_sum_opt] = deal(zeros(iterations,1));
 yaw     = zeros(N,1);           % Initialize yaw matrix         [radians]
-yawall  = zeros(iterations,N);  % Initialize yawall matrix      [radians]
-yawbase = yaw;
+yaw_opt = zeros(iterations,N);  % Initialize yawall matrix      [radians]
 
-
-%% Non-optimized (baseline run, with uncertainty)
-[store_Ptot, store_DELtot] = deal(zeros(1,length(windInflowDistribution)));
-for jj = 1:length(windInflowDistribution)
-    windDir = windInflowDistribution(jj);
+% -------GAME THEORY---------%
+for k = 1:iterations                % k is the number of iterations
     
-    for i = 1 : N % Find Turbine Positions w.r.t. Incoming Wind Direction
-        Xt(i) = cos(-windDir)*Xc(i) + -sin(-windDir)*Yc(i); % Translated Xc-coordinates
-        Yt(i) = sin(-windDir)*Xc(i) + cos(-windDir)*Yc(i);  % Translated Yc-coordinates
-    end
-
-    % Find front (most upwind) turbine:  
-    Pos     = [rot90(Xt) rot90(Yt)];    % Set position matrix
-    NewPos  = sortrows(Pos, 1);         % Sort the position matrix on the smallest Xt value
-
-    X = NewPos(:,1);                    % Extracting the X-coordinates
-    Y = NewPos(:,2);                    % Extracting the Y-coordinates
-    X = X - min(X);                     % Discarding non-used X
-    Y = Y - min(Y);                     % Discarding non-used Y
-    
-    % Power and loads
-    [ P,Ptot,~,Dw,Ut,yw,Dwn,Up,I,~,~,Ic] = FLORIS_GT_test(windSpeed,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D);
-    [DELtot, data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,U,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
-    store_Ptot(1,jj)   = Ptot;
-    store_DELtot(1,jj) = DELtot;
-    
-    % Check for nominal case, and write to corresponding outputs
-    if windDir == windDirection
-        [Pnom(1),  Pnombase,   Pnombaseall(1)]    = deal(Ptot);
-        [DELnom(1), DELnombase, DELnombaseall(1)] = deal(DELtot);
-    end;
-end
-sum_Ptot   = store_Ptot  * weightsInflowUncertainty;
-sum_DELtot = store_DELtot* weightsInflowUncertainty;
-
-[Pdir(1),Pdirall(1),Pdirbase,Pdirbaseall(1)]         = deal(sum_Ptot);
-[DELdir(1),DELdirall(1),DELdirbase,DELdirbaseall(1)] = deal(sum_DELtot);
-
-[PDELdir(1),PDELdirall(1),PDELdirbase,PDELdirbaseall(1),...
- PDELnom(1),PDELnombase,PDELnombaseall(1)] = deal(1-optConst);
-
-clear sum_Ptot sum_DELtot
-
-%% ------------------------------------------------------------------------%
-% -----------------------------GAME THEORY---------------------------------%
-% -------------------------------------------------------------------------%
-%h = waitbar(0,'GameTheory Combined');
-for k = 2:iterations            % k is the number of iterations
-    for i = 1:N                 % For each WT
-        R1 = rand();            % Random value between [0 1]
-        E = 1/(alpha*k);        % Sensitivity linearly related to iteration
-        if R1 < E
-            R2 = normrnd(0,35)*(pi/180);  % random value [0 10]       
-            if yawbase(i)+R2 <= 0
-                yaw(i) = max(yawbase(i)+R2,yawmin);  % Yaw-angle must be bigger than the minimum yaw angle
+    % For k == 1, do a baseline run, otherwise randomize yaw angles
+    if k > 1                        
+        for i = 1:N                 % For each WT
+            R1 = rand();            % Random value between [0 1]
+            E = 1/(alpha*k);        % Sensitivity linearly related to iteration
+            if R1 < E
+                R2 = normrnd(0,35)*(pi/180);  % random value [0 10]      
+                yaw(i) = max(min(yaw_opt(i)+R2,yawmax),yawmin);
             else
-                yaw(i) = min(yawbase(i)+R2,yawmax);  % Yaw-angle must be smaller than the maximal yaw angle
-            end
-        else
-            yaw(i) = yawbase(i);   % Old yaw setting [radians]
-        end
-        yawall(k,i) = yaw(i);   % Remember yaw setting [radians]
-    end
-
-    Ptot = 0;                       % Reset Total Power             [W]
-    DELtot = 0;                     % Reset DEL                     [-]
+                disp(['yaw i =',num2str(yaw(i))]);
+                disp(['yaw opt =',num2str(yaw_opt(k-1,i))]);
+                yaw(i) = yaw_opt(k-1,i);   % Old yaw setting [radians]
+            end;
+        end;
+    end;
 
     for jj = 1:length(windInflowDistribution)
         windDir = windInflowDistribution(jj);
-        %% Find Turbine Positions w.r.t. Incoming Wind Direction
-        % Find down-/crosswind turbine coordinates
-        for i = 1 : N
-        Xt(i) = cos(-windDir)*Xc(i) + -sin(-windDir)*Yc(i); % Translated Xc-coordinates
-        Yt(i) = sin(-windDir)*Xc(i) + cos(-windDir)*Yc(i);  % Translated Yc-coordinates
+        for i = 1:N % Find down-/crosswind turbine coordinates
+            Xt(i) = cos(-windDir)*Xc(i) + -sin(-windDir)*Yc(i); % Translated Xc-coordinates
+            Yt(i) = sin(-windDir)*Xc(i) + cos(-windDir)*Yc(i);  % Translated Yc-coordinates
         end
 
-        % Find front (most upwind) turbine:  
         Pos     = [rot90(Xt) rot90(Yt)];    % Set position matrix
         NewPos  = sortrows(Pos, 1);         % Sort the position matrix on the smallest Xt value
 
-        X = NewPos(:,1);                    % Extracting the X-coordinates
-        Y = NewPos(:,2);                    % Extracting the Y-coordinates
+        X = NewPos(:,1)-min(NewPos(:,1));   % Extracting the X-coordinates
+        Y = NewPos(:,2)-min(NewPos(:,2));   % Extracting the Y-coordinates
 
-        X = X - min(X);                     % Discarding non-used X
-        Y = Y - min(Y); %+.5*D;             % Discarding non-used Y
-        %% Calculate amount of Power and Load
+        % Calculate amount of power and DEL values
         [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,~,~,Ic] = FLORIS_GT_test(windSpeed,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D);
-        [DELtot data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,U,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
-        if windDir == windDirection % nominal case
-            PDELtotnom = (Ptot/Pnom(1))-optConst*(DELtot/DELnom(1));
+        [DELtot, data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,windSpeed,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
+        
+        if k==1
+            Pbaseline   = Ptot;
+            DELbaseline = DELtot;
         end;
-        store_Ptot(1,jj) = Ptot;
-        store_DELtot(1,jj) = DELtot;
-    end  
+        
+        Ptot_inflows(1,jj)   = Ptot;   % results for each wind direction
+        DELtot_inflows(1,jj) = DELtot; % results for each wind direction
+    end;
  
-    sum_Ptot    = store_Ptot*weightsInflowUncertainty;
-    sum_DELtot  = store_DELtot*weightsInflowUncertainty;
-    sum_PDELtot = (sum_Ptot/Pdir(1))-optConst*(sum_DELtot/DELdir(1)); % Generate Power & Load total
+    sum_Ptot    = Ptot_inflows   * weightsInflowUncertainty;  % Inflow uncertainty-weighed generated power
+    sum_DELtot  = DELtot_inflows * weightsInflowUncertainty;  % Inflow uncertainty-weighed turbine DEL values
+    sum_PDELtot = sum_Ptot/Pbaseline - optConst*sum_DELtot/DELbaseline; % Generate combined power and loads cost function
     
-
-    % Uncomment this if-loop for garanteed power incresement w.r.t non optimized case
-    if (sum_Ptot>Pdirbase && sum_PDELtot>PDELdirbase)      % New Power tot. must be bigger than the power when non-optimized
-        yawbase     = yaw;  % Overwrite the yawbase settings with the new yaw settings
-        Pdirbase    = sum_Ptot;   % Overwrite the Powerbase results with the new Power total results
-        DELdirbase  = sum_DELtot;
-        PDELdirbase = sum_PDELtot;
-        Pnombase    = Ptot;
-        DELnombase  = DELtot;
-        PDELnombase = PDELtotnom;
-    end
-    
-    Pnombaseall(k)    = Pnombase;
-    DELnombaseall(k)  = DELnombase;
-    PDELnombaseall(k) = PDELnombase;
-    
-    Pdirall(k)        = sum_Ptot;       
-    Pdirbaseall(k)    = Pdirbase;
-    
-    DELdirall(k)      = sum_DELtot;    
-    DELdirbaseall(k)  = DELdirbase;
-
-    PDELdirall(k)     = sum_PDELtot; 
-    PDELdirbaseall(k) = PDELdirbase;
-    
+    %if (sum_Ptot > J_Pws_opt && sum_PDELtot > J_sum_opt)  % This line enforces that powers do not decrease because of this optimization
+    if (sum_PDELtot > J_sum_opt) 
+        yaw_opt(k,:) = yaw;         
+        J_Pws_opt(k) = sum_Ptot; 
+        J_DEL_opt(k) = sum_DELtot;
+        J_sum_opt(k) = sum_PDELtot;
+    else % if no improvements: keep optimal solution
+        J_Pws_opt(k) = J_Pws_opt(k-1); 
+        J_DEL_opt(k) = J_DEL_opt(k-1);
+        J_sum_opt(k) = J_sum_opt(k-1);
+    end;
     %waitbar(k/iterations)        % Update waitbar
 end
-%close(h)
 
 %% FIGURE BUILDING
 figure
-hold on
-plot(PDELdirbaseall,'Linewidth',2)
-plot(PDELnombaseall,'LineWidth',2)
+plot(J_sum_opt,'Linewidth',2)
 grid on
 title('Mixed optimization: Power & Load')
 ylabel('PL-score [-]')
@@ -239,9 +167,7 @@ xlabel('Iterations [-]')
 
 %%
 figure
-hold on
-plot(Pdirbaseall/1E6,'Linewidth',2)
-plot(Pnombaseall/1E6,'LineWidth',2)
+plot(J_Pws_opt/1E6,'Linewidth',2)
 grid on
 title('Power increase')
 ylabel('Power [MW]')
@@ -249,9 +175,7 @@ xlabel('Iterations [-]')
 
 %%
 figure
-hold on
-plot(DELdirbaseall/1E6,'Linewidth',2)
-plot(DELnombaseall/1E6,'LineWidth',2)
+plot(J_DEL_opt/1E6,'Linewidth',2)
 grid on
 title('Load decrease')
 ylabel('DEL x10^6')
@@ -277,7 +201,3 @@ text(X+0.05, Y, labels, 'VerticalAlignment','bottom')
 ylabel('Y-Distance [m]')
 xlabel('X-Distance [m]')
 title('Gemini Wind Farm')
-
-%% Remove paths
-rmpath(strcat('Wind_Field_Generation\Outputs\',num2str(sim_name),'\Ueff'))
-rmpath(strcat('FAST_Analysis\Outputs\',num2str(sim_name),'\DEL_and_SIM')) 
