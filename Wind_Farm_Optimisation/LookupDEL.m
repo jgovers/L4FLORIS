@@ -1,6 +1,6 @@
 function [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,...
                             N, D, U, T, dt,Dw3_vector, C2C_vector, Ueff_vector, sim_name)
-    
+    dispErrors = false;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%% Uniform wind field %%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,7 +14,7 @@ function [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,...
     end
     
     if   Dw3 > 0 && Dw3 < Dw3_vector(1)
-            display('Wake diameter not in dataset. The smallest possible wake diameter was selected')
+            if dispErrors; display('Wake diameter not in dataset. The smallest possible wake diameter was selected'); end;
             Dw3_field = 1; %<----- check this value!
     end
     
@@ -25,13 +25,13 @@ function [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,...
     end
 
     if Dw3 > Dw3_vector(end)
-            display('Wake diameter not in dataset. The largest possible wake diameter was selected')
+            if dispErrors; display('Wake diameter not in dataset. The largest possible wake diameter was selected'); end;
             Dw3_field = length(Dw3_vector);
     end
 
     % Center-2-Center distance discretization
     if C2C < C2C_vector(1)
-            display('Center-2-Center distance not in dataset. The most negative C2C distance was selected')
+            if dispErrors; display('Center-2-Center distance not in dataset. The most negative C2C distance was selected'); end;
             C2C_field = 1;
     end
     
@@ -45,14 +45,14 @@ function [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,...
     end
 
     if C2C > C2C_vector(end)
-            display('Center-2-Center distance not in dataset. The most positive C2C distance was selected')
+            if dispErrors; display('Center-2-Center distance not in dataset. The most positive C2C distance was selected'); end;
             C2C_field = length(C2C_vector);
     end
         
     search_vector = Ueff_matrix(C2C_field,Dw3_field,:);
     [c index] = min(abs(search_vector-Ueff));
     Ueff_field = index;
-    
+   
     % Find DEL 
     % The DEL values from the data-set which is compiled using FAST and MLIFE
     % Load DEL_MATRIX

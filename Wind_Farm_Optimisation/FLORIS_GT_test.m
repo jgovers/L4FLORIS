@@ -1,4 +1,4 @@
-function [ P,Ptot,c,Dw,Ut,yw,Dwn,Up,I,Aol,Oup,Ic] = FLORIS_GT_test(U,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D)            
+function [ P,Ptot,Dw,Ut,yw,Dwn,Up,I,Ic] = FLORIS_GT_test(U,yaw,rho,ai,lf,PP,A,m_e,k_e,a_d,b_d,k_d,M_U,a_U,b_U,X,Y,N,D)            
 %% Wake Deflection
         %Determine the wake deflection     
         Ct = 4*ai*(1-ai);       % Power coefficient
