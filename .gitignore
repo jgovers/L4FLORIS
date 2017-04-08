@@ -10,3 +10,7 @@ backups*
 
 # Session info
 octave-workspace
+
+# Wind files
+*.sum
+*.wnd
