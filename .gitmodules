@@ -1,0 +1,3 @@
+[submodule "bin/FLORISSE_M"]
+	path = bin/FLORISSE_M
+	url = https://github.com/Bartdoekemeijer/FLORISSE_M
