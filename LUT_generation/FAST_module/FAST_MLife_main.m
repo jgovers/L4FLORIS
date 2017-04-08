@@ -1,21 +1,21 @@
-global N D U T dt
-global Dw3_vector C2C_vector Ueff_vector sim_name
+%global N D U T dt
+%global Dw3_vector C2C_vector Ueff_vector sim_name
 
-D = 129;                                    % Rotor Diameter        [m]
-U = 8;                                     % Ambient Wind speed    [m/s]
+% D = 129;                                    % Rotor Diameter        [m]
+% U = 8;                                     % Ambient Wind speed    [m/s]
 T = 100+100+76;                             % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
 dt = 0.125;                                % Time step size        [-]
 
-% Discretization of wake diameter of region 3
-Dw3_vector = [D+25 D+50 D+75 D+100 D+125 D+150 D+175 D+200];
-% Dw3_vector = [D+25];
-% Discretization of Center 2 Center distance (Rotor center & Wake center)
-C2C_vector = [-230 -220 -210 -200 -190 -180 -170 -160 -150 -140 -130 -120 -110 -100 -90 -80 -70 -60 -50 -40 -30 -20 -10 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230];
-% C2C_vector = [-90];
-% Discretization of effective wind velocity
-% Ueff_vector = [1 0.8 0.6];
-Ueff_vector = [0.8 0.6];
-sim_name = 'NO_IPC_FINAL';
+% % Discretization of wake diameter of region 3
+% Dw3_vector = [D+25 D+50 D+75 D+100 D+125 D+150 D+175 D+200];
+% % Dw3_vector = [D+25];
+% % Discretization of Center 2 Center distance (Rotor center & Wake center)
+% C2C_vector = [-230 -220 -210 -200 -190 -180 -170 -160 -150 -140 -130 -120 -110 -100 -90 -80 -70 -60 -50 -40 -30 -20 -10 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230];
+% % C2C_vector = [-90];
+% % Discretization of effective wind velocity
+% % Ueff_vector = [1 0.8 0.6];
+% Ueff_vector = [0.8 0.6];
+% %sim_name = 'NO_IPC_FINAL';
 
 %% Calculate settings for the controller within the simulink model
 load('Controller_parameters');                  
@@ -25,43 +25,42 @@ addpath(genpath('slprj'))                       %Load Path needed for execution 
 addpath(genpath('subfunctions'))                %Load Path needed for execution of this code
 addpath(genpath('Data'))                        %Load Path needed for execution of this code
 addpath(genpath('Outputs'))                     %Load Path needed for execution of this code
-%% Simulation settings
-Sim_tim = T;                          % Simulation time       [s]
-FAST_dt = dt;                       % Sample time FAST      [-]
+% %% Simulation settings
+% Sim_tim = T;                          % Simulation time       [s]
+% FAST_dt = dt;                       % Sample time FAST      [-]
 %%
-iter_wf = 0;                                         % Set counter to zero [-]
-Tot_iter = length(Dw3_vector)*length(C2C_vector)*length(Ueff_vector);    % Total amount of simulations [-]
-DEL_summary = zeros(Tot_iter,3);                  % Initialize DEL summary matrix [-]   
+% iter_wf = 0;                                         % Set counter to zero [-]
+% Tot_iter = length(Dw3_vector)*length(C2C_vector)*length(Ueff_vector);    % Total amount of simulations [-]
+% DEL_summary = zeros(Tot_iter,3);                  % Initialize DEL summary matrix [-]   
 %%
 %mkdir('Outputs',sim_name)
-mkdir(strcat('Outputs\',num2str(sim_name)),'Data')
-mkdir(strcat('Outputs\',num2str(sim_name)),'DEL_and_SIM')
-mkdir(strcat('Outputs\',num2str(sim_name)),'Excel')
-addpath('Outputs')
-            
+% mkdir(strcat('Outputs\',num2str(sim_name)),'Data')
+% mkdir(strcat('Outputs\',num2str(sim_name)),'DEL_and_SIM')
+% mkdir(strcat('Outputs\',num2str(sim_name)),'Excel')
+% addpath('Outputs')
+%             
 %h = waitbar(0,'Iterations Wind Field');     % Initialize sim-iteration counter [-]
 
-for Ueff_vector_step = 1:length(Ueff_vector)
-    for Dw3_vector_step = 1:length(Dw3_vector)        
-        for C2C_vector_step= 1:length(C2C_vector)    
+for Ueff_vector_step = 1:1
+    for Dw3_vector_step = 1:1      
+        for C2C_vector_step= 1:1
             
-            iter_wf = iter_wf + 1;
+%             iter_wf = iter_wf + 1;
             % USE THIS
-            iter_wf_v2 = strcat(num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step));
-            
-            name_wind1=strcat('..\Wind_Field_Generation\Outputs\',num2str(sim_name),'\WindFiles\WF_field','_',num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step),'.wnd');         
-            name_wind2=strcat('..\Wind_Field_Generation\Outputs\',num2str(sim_name),'\WindFiles\WF_field','_',num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step),'.sum');
+%             iter_wf_v2 = strcat(num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step));
+%             
+%             name_wind1=strcat('..\Wind_Field_Generation\Outputs\',num2str(sim_name),'\WindFiles\WF_field','_',num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step),'.wnd');         
+%             name_wind2=strcat('..\Wind_Field_Generation\Outputs\',num2str(sim_name),'\WindFiles\WF_field','_',num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step),'.sum');
 %             copyfile(name_wind1,'wind.wnd')
 %             copyfile(name_wind2,'wind.sum')
 
-            disp(strcat('Simulation',num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step),'started'))
+%             disp(strcat('Simulation',num2str(Dw3_vector_step),'_c2c_',num2str(C2C_vector_step),'_Ueff_',num2str(Ueff_vector_step),'started'))
 %             if (b_choice_1 == 'y')
             %-------------------------------------------------------------%
-            clear sim_name
-            sim('NREL5MW_Baseline_loads_2014b')
-                
-%                  sim('NREL5MW_Baseline_loads_IPC_1P_2P_v2_2014b')
-%                 sim('NREL5MW_Baseline_loads_IPC_1P_v3_2014b') % NO IPC, 1P IPC, 2P-1P IPC 
+%             clear sim_name
+            sim('NREL5MW_Baseline_loads_2014b')    
+            %sim('NREL5MW_Baseline_loads_IPC_1P_2P_v2_2015b')
+%             sim('NREL5MW_Baseline_loads_IPC_1P_v3_2014b') % NO IPC, 1P IPC, 2P-1P IPC 
             %-------------------------------------------------------------%
             disp ('Simulation executed')
 %             end

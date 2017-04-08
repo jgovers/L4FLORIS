@@ -14,7 +14,7 @@ inflowSetName   = 'onlyC2C';    % Destination folder name
 
 % LUT coverage
 zWake     = HH;          % Height of wake center
-C2C_range = 0;%-200:20:200; % Range of center-to-center (wake-turbine) coverage for LUT 
+C2C_range = -200:20:200; % Range of center-to-center (wake-turbine) coverage for LUT 
 % --- More stuff to add here ---
 
 
