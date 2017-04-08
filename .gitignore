@@ -14,3 +14,4 @@ octave-workspace
 # Wind files
 *.sum
 *.wnd
+workspace.mat
