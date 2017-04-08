@@ -2,9 +2,9 @@ clear all; close all; clc;
 addpath ..\bin
 
 % Set up settings
-T               = 180;          % Simulation duration [seconds]
+T               = 276;          % Simulation duration [seconds]
 u_mean          = 8.0;          % Freestream wind speed [m/s]
-dt              = 0.25;         % Timestep for FAST simulations
+dt              = 0.125;        % Timestep for FAST simulations
 Gaussian_A      = 5;            % Wake deficit in center [m/s]
 Gaussian_omegay = 50;           % Spread for Gaussian wake shape
 Gaussian_omegaz = 50;           % Spread for Gaussian wake shape
@@ -13,15 +13,15 @@ HH              = 90.0;         % Hub height
 inflowSetName   = 'onlyC2C';    % Destination folder name
 
 % LUT coverage
-zWake     = HH;       % Height of wake center
-C2C_range = -200:20:200; % Range of center-to-center (wake-turbine) coverage for LUT 
+zWake     = HH;          % Height of wake center
+C2C_range = 0;%-200:20:200; % Range of center-to-center (wake-turbine) coverage for LUT 
 % --- More stuff to add here ---
 
 
 % Generate grid points
-time  = [0:dt:T];      % time
+time  = [dt:dt:T];     % time
 x     = u_mean*time;   % longitudinal dimension
-y     = -300:5:300;    % lateral dimension
+y     = 300:-5:-300;   % lateral dimension (NOTE: MUST BE POSITIVE TO NEGATIVE)
 z     = 0:5:200;       % vertical dimension
 Nx    = length(x);     % Number of grid points x-
 Ny    = length(y);     % Number of grid points y-
