@@ -20,25 +20,25 @@ yaw                   = zeros(N,1);
 yaw_opt               = zeros(iterations,N); 
 
 % Perform game-theoretic optimization
-disp(['Starting GT optimization using FLORIS. [Iterations: ' num2str(iterations) ']']); tic;
+disp([datestr(rem(now,1)) ': Starting GT optimization using FLORIS. [Iterations: ' num2str(iterations) '. Calls to FLORIS: ' num2str(iterations*length(windInflowDistribution)) ']']); tic;
 for k = 1:iterations  % k is the number of iterations
-    if(~rem(k*100/iterations,10)); disp(['  ' num2str(k*100/iterations) '% completed.']); end;
+    if(~rem(k*100/iterations,10)); disp([datestr(rem(now,1)) ':  ' num2str(k*100/iterations) '% completed.']); end;
     
-    % For k == 1, do a baseline run, otherwise randomize yaw angles
+    % For k == 1 do a baseline run, otherwise randomize yaw angles
     if k > 1
         for i = 1:N                 % For each WT
             R1 = rand();            % Random value between [0 1]
             E = 1-k/iterations;     % Sensitivity linearly related to iteration
             if R1 < E
-                R2 = normrnd(0,35)*(pi/180);  % Perturb with random value [0 10]
+                R2 = normrnd(0,35); % Perturb with random value [0 10] degrees
                 yaw(i) = max(min(yaw_opt(i)+R2,yawmax),yawmin);
             else
-                yaw(i) = yaw_opt(k-1,i);   % Keep old yaw setting [radians]
+                yaw(i) = yaw_opt(k-1,i);   % Keep old yaw setting [degrees]
             end;
         end;
     end;
     
-    for jj = 1:length(windInflowDistribution) % Calculate power and DEL over wind rose
+    for jj = 1:length(windInflowDistribution) % Calculate power and DEL for each wind direction
         windDir = windInflowDistribution(jj);
         siteStruct.uInfIf = windSpeed*cosd(windDir);
         siteStruct.vInfIf = windSpeed*sind(windDir);
@@ -50,7 +50,7 @@ for k = 1:iterations  % k is the number of iterations
         for turbi = 1:N
             P(turbi)  = turbines(turbi).power;
             % -- Look up DEL values for flow field with value1, value2, value3 --
-            %DEL(turbi)= interpn(DEL_table.param1,DEL_table.param2,DEL_table.param3,...
+            % DEL(turbi)= interpn(DEL_table.param1,DEL_table.param2,DEL_table.param3,...
             %                    DEL_table.table,value1,value2,value3); 
             DEL(turbi) = 1; % Placeholder
         end;
@@ -83,9 +83,9 @@ for k = 1:iterations  % k is the number of iterations
         J_sum_opt(k) = J_sum_opt(k-1);
     end;
 end;
-toc;
+disp([datestr(rem(now,1)) ': Elapsed time is ' num2str(toc) ' seconds.']);
 if plotResults % Plot results
-    disp(['Plotting results...'])
+    disp([datestr(rem(now,1)) ': Plotting results...'])
     figure % Cost function
     plot(J_sum_opt,'Linewidth',2); grid on;
     title('Mixed optimization: Power & Load');
