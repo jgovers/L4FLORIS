@@ -1,23 +1,21 @@
 function[yaw_opt,J_Pws_opt,J_DEL_opt,J_sum_opt] = optimizeL4FLORIS( simStruct, optimStruct, modelStruct )
 if nargin <= 0
-    simStruct.sim_name = '2p_IPC_FINAL';
-    simStruct.T = 100+100+76;           % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
-    simStruct.dt = 0.125;               % Time step size        [-]
-    simStruct.Dw3_vector = 126.4+25:25:200; % Discretization of wake diameter of region 3
-    simStruct.C2C_vector = -230:10:230; % Discretization of Center 2 Center distance
-    simStruct.Ueff_vector = [0.8 0.6];  % Discretization of effective wind velocity
-    simStruct.maxYaw = +30*(pi/180);  % Largest  yaw angle [radians]
-    simStruct.minYaw = -30*(pi/180);  % Smallest yaw angle [radians]
-    simStruct.axInd  = 1/3*ones(9);   % Axial induction factors
-    simStruct.windUncertainty = [0];%[-16:4:16];     % Additional wind disturbance range (symmetric)
+    simStruct.sim_name = 'NO_IPC_FINAL';
+    simStruct.Dw3_vector = 129+25:25:200;   % Discretization of wake diameter of region 3
+    simStruct.C2C_vector = -230:10:230;     % Discretization of Center 2 Center distance
+    simStruct.Ueff_vector = [0.8 0.6];      % Discretization of effective wind velocity
+    simStruct.maxYaw = +30*(pi/180);        % Largest  yaw angle [radians]
+    simStruct.minYaw = -30*(pi/180);        % Smallest yaw angle [radians]
+    simStruct.axInd  = 1/3*ones(9);         % Axial induction factors
+    simStruct.windUncertainty = [-12:4:12]; % Additional wind disturbance range (symmetric)
 end;
 if nargin <= 1
-    optimStruct.optConst   = 0.5;   % Weighting factor                                                  
-    optimStruct.iterations = 500;   % Iterations  [-] 
-    optimStruct.alpha      = 0.025; % Sensitivity [-]
+    optimStruct.optConst   = 1;     % Weighting factor                                                  
+    optimStruct.iterations = 100;   % Iterations  [-] 
+%    optimStruct.alpha      = 0.5*1/optimStruct.iterations; % Sensitivity [-]
 end;
 if nargin <= 2
-    modelStruct = floris_param_model( 'ben' )
+    modelStruct = floris_param_model( 'ben' );
     turbType    = floris_param_turbine('nrel5mw');
 
     site.LocIF =   [300,    100.0,  turbType.hub_height
@@ -39,12 +37,10 @@ end;
 % Optimization parameters
 optConst   = optimStruct.optConst;
 iterations = optimStruct.iterations;
-alpha      = optimStruct.alpha;
+%alpha      = optimStruct.alpha;
 
 % Simulation parameters
 sim_name    = simStruct.sim_name;
-T           = simStruct.T;           % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
-dt          = simStruct.dt;          % Time step size        [-]
 Dw3_vector  = simStruct.Dw3_vector;  % Discretization of wake diameter of region 3
 C2C_vector  = simStruct.C2C_vector;  % Discretization of Center 2 Center distance
 Ueff_vector = simStruct.Ueff_vector; % Discretization of effective wind velocity
@@ -71,18 +67,19 @@ windInflowDistribution   = windDirection+windUncertainty;
 weightsInflowUncertainty = gaussianWindDistribution(windInflowDistribution);
  
 % Initialize empty GT-theory matrices    
-[J_Pws_opt,J_sum_opt] = deal(-1);
-J_DEL_opt             = Inf;
+[J_Pws_opt,J_sum_opt] = deal(-1e10);
+J_DEL_opt             = 1e10;
 yaw                   = zeros(N,1);           % Initialize yaw matrix         [radians]
 yaw_opt               = zeros(iterations,N);  % Initialize yawall matrix      [radians]
 
 % -------GAME THEORY---------%
 for k = 1:iterations                % k is the number of iterations
+    if(~rem(k*100/iterations,5)); disp([' ' num2str(k*100/iterations) '% completed.']); end;
     % For k == 1, do a baseline run, otherwise randomize yaw angles
     if k > 1                        
         for i = 1:N                 % For each WT
             R1 = rand();            % Random value between [0 1]
-            E = 1/(alpha*k);        % Sensitivity linearly related to iteration
+            E = 1-k/iterations;     % Sensitivity linearly related to iteration
             if R1 < E
                 R2 = normrnd(0,35)*(pi/180);  % random value [0 10]      
                 yaw(i) = max(min(yaw_opt(i)+R2,yawmax),yawmin);
@@ -96,15 +93,7 @@ for k = 1:iterations                % k is the number of iterations
         windDir = windInflowDistribution(jj);
         site.uInfIf = windSpeed*cosd(windDir);
         site.vInfIf = windSpeed*sind(windDir);
-        
-        % X Dw: wakes(1).diameters = 9x3, wakes(2).diameters = 8x3, .. (effect of column turb on row turb).
-        % X P: turbines(1).power, turbines(2).power, turbines(3).power, ...
-        % X Ut: mean speed at each wind turbine: turbines(1).windSpeed, ...
-        % X yw: wakes(1).centerLine, wakes(2).centerLine, ...
-        % Up,Dwn: All upwind/downwind turbines
-        % I: UPWIND turbine with  most overlap
-        % Ic: most important (?) upwind turbine
-        
+             
         input.yaw  = yaw;
         [turbines, wakes, wtRows] = run_floris(input,modelStruct,turbType,site);
         
@@ -158,7 +147,14 @@ for k = 1:iterations                % k is the number of iterations
             Ic(turbi) = turbines(Dwn(turbi)).turbLargestImpact;
         end;
         
-        [DELtot, data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,windSpeed,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
+        % Dw: wakes(1).diameters = 9x3, wakes(2).diameters = 8x3, .. (effect of column turb on row turb).
+        % P: turbines(1).power, turbines(2).power, turbines(3).power, ...
+        % Ut: mean speed at each wind turbine: turbines(1).windSpeed, ...
+        % yw: wakes(1).centerLine, wakes(2).centerLine, ...
+        % Up,Dwn: All upwind/downwind turbines
+        % I: Furthest upstream turbine
+        % Ic: most important upstream turbine
+        [DELtot, data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D,windSpeed,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
         
         if k==1
             Pbaseline   = Ptot;

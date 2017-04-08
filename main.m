@@ -1,11 +1,6 @@
 clear all; close all; clc;
 
 %% Input by user
-global N D U T dt
-global Dw3_vector C2C_vector Ueff_vector sim_name
-
-D = 129;           % Rotor Diameter        [m]
-U = 10;            % Ambient Wind speed    [m/s]
 T = 100+100+76;    % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
 dt = 0.125;        % Time step size        [-]
 

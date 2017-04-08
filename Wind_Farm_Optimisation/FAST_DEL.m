@@ -1,4 +1,4 @@
-function [DELtot,data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D, U, T, dt,Dw3_vector, C2C_vector, Ueff_vector, sim_name)
+function [DELtot,data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summary,D, U, Dw3_vector, C2C_vector, Ueff_vector, sim_name)
     %Initialize data matrix
     data = zeros(N,8);
     %Fill column 1 with upwind turbine numbers
@@ -26,7 +26,7 @@ function [DELtot,data] = FAST_DEL(N,Up,Dwn,I,Ic,Dw,Y,yw,Ut,Ueff_matrix,DEL_summa
            Dw3 = data(i,4);
            C2C = data(i,5);
            Ueff = data(i,6);
-           [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,N,D,U,T,dt,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
+           [DEL,filenumber] = LookupDEL(Dw3,C2C,Ueff,Ueff_matrix,DEL_summary,N,D,U,Dw3_vector,C2C_vector,Ueff_vector,sim_name);
            % Corresponding DEL
            data(i,7) = round(DEL);
            % Corresponding filenumber
