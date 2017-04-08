@@ -6,6 +6,7 @@
 
 # Compiled MEX binaries (all platforms)
 *.mex*
+backups*
 
 # Session info
 octave-workspace

@@ -1,61 +1,37 @@
 clear all; close all; clc;
+addpath('bin');                      % add binary files
+addpath('bin\FLORISSE_M');           % add FLORIS model files
+addpath('bin\FLORISSE_M\functions'); % add FLORIS model functions
 
-%% Input by user
-T = 100+100+76;    % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
-dt = 0.125;        % Time step size        [-]
+% Import DEL look-up table
+DEL_table = load('./LUT_database/lut_example.mat'); % Load LUT of choice
 
-Dw3_vector = 129+25:25:200; % Discretization of wake diameter of region 3
-C2C_vector = -230:10:230; % Discretization of Center 2 Center distance
-Ueff_vector = [0.8 0.6];  % Discretization of effective wind velocity
+% Load model, turbine and topology settings
+modelStruct = floris_param_model('default');    % Load default FLORIS model settings
+turbType    = floris_param_turbine('nrel5mw');  % Load NREL 5MW turbine properties
 
-sim_name            = '2p_IPC_FINAL';    % Simulation name: NO_IPC_FINAL or 1P_IPC_FINAL or 2p_IPC_FINAL
-createNewWindFields = false;             % Create new wind fields
-runFASTAnalaysis    = false;             % Run FAST analysis
-runOptimization     = true;              % Run WF optimization
-displayDELgraph     = true;              % Display DEL graph
+siteStruct.LocIF =   [300,    100.0,  turbType.hub_height % 9 turbine scenario
+                      300,    300.0,  turbType.hub_height
+                      300,    500.0,  turbType.hub_height
+                      1000,   100.0,  turbType.hub_height
+                      1000,   300.0,  turbType.hub_height
+                      1000,   500.0,  turbType.hub_height
+                      1600,   100.0,  turbType.hub_height
+                      1600,   300.0,  turbType.hub_height
+                      1600,   500.0,  turbType.hub_height];
 
+% Atmospheric settings
+siteStruct.uInfIf   = 8;        % x-direction flow speed inertial frame (m/s)
+siteStruct.vInfIf   = 0;        % y-direction flow speed inertial frame (m/s)
+siteStruct.rho      = 1.1716;   % Atmospheric air density (kg/m3)
 
-% Wind field generation
-if createNewWindFields
-    disp('Generating new wind field files')
-    addpath('Wind_Field_Generation')
-    run Wind_Field_Generation\WFgen_v4.m
-    rmpath('Wind_Field_Generation')
-    disp('Wind field generation has finished')
-else
-    disp('Skipping wind field generation')   
-end
+% Setup optimization settings
+optimStruct.optConst        = 1;                            % Weighting factor. Power only = 1, Loads only = 0.
+optimStruct.iterations      = 100;                          % Optimization iterations  [-]
+optimStruct.maxYaw          = +30*(pi/180);                 % Largest  yaw angle [radians]
+optimStruct.minYaw          = -30*(pi/180);                 % Smallest yaw angle [radians]
+optimStruct.axInd           = 1/3*ones(size(siteStruct.LocIF,1)); % Axial induction factors
+optimStruct.windUncertainty = [-12:4:12];                   % Additional wind disturbance range (symmetric)
 
-% FAST and Mlife analysis
-if (runFASTAnalaysis)
-    disp('FAST analysis has started')
-    addpath('FAST_Analysis')
-    addpath(strcat('Wind_Field_Generation\Outputs\',num2str(sim_name),'\WindFiles'))                      %Load Path needed for execution of this code <--- warning /    
-    run('./FAST_Analysis/FAST_MLife_main.m')
-    rmpath('FAST_Analysis')
-    disp('FAST analysis has finished')
-else
-    disp('Skipping FAST analysis')   
-end
-
-% WF optimisation 
-if (runOptimization)
-    disp('Wind farm optimisation has started') 
-    addpath(genpath('Wind_Farm_Optimisation'))
-    run optimizeL4FLORIS.m
-    rmpath(genpath('Wind_Farm_Optimisation'))
-    disp('Wind farm optimisation has finished') 
-else
-    disp('Skipping wind farm optimisation')   
-end
-
-% Generate Graphs
-if (displayDELgraph)
-    disp('Generation of graphs has started') 
-    addpath(genpath('Generate_Graphs'))
-    run DEL_graph
-    rmpath(genpath('Generate_Graphs'))
-    disp('Generation of graphs has finished')
-else
-    disp('Skip generation of graphs')   
-end
+% Run optimization
+[yaw_opt,J_Pws_opt,J_DEL_opt,J_sum_opt] = optimizeL4FLORIS(modelStruct,turbType,siteStruct,optimStruct,true);
