@@ -4,7 +4,7 @@ clear all; close all; clc;
 T = 100+100+76;    % Duration of simulation[s] Initialization + usable for DEL analyses + discarded by FAST
 dt = 0.125;        % Time step size        [-]
 
-Dw3_vector = D+25:25:200; % Discretization of wake diameter of region 3
+Dw3_vector = 129+25:25:200; % Discretization of wake diameter of region 3
 C2C_vector = -230:10:230; % Discretization of Center 2 Center distance
 Ueff_vector = [0.8 0.6];  % Discretization of effective wind velocity
 
@@ -42,7 +42,7 @@ end
 if (runOptimization)
     disp('Wind farm optimisation has started') 
     addpath(genpath('Wind_Farm_Optimisation'))
-    run Game_theory_robust_v2.m
+    run optimizeL4FLORIS.m
     rmpath(genpath('Wind_Farm_Optimisation'))
     disp('Wind farm optimisation has finished') 
 else
