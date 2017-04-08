@@ -10,11 +10,10 @@ Gaussian_omegay = 50;           % Spread for Gaussian wake shape
 Gaussian_omegaz = 50;           % Spread for Gaussian wake shape
 plotProfile     = true;         % Plot the inflow profiles (y,z)
 HH              = 90.0;         % Hub height
-inflowSetName   = 'onlyC2C';    % Destination folder name
+run('LUTsettings.m')
 
 % LUT coverage
 zWake     = HH;          % Height of wake center
-C2C_range = -200:20:200; % Range of center-to-center (wake-turbine) coverage for LUT 
 % --- More stuff to add here ---
 
 
@@ -64,7 +63,7 @@ for yWake = C2C_range % Lateral location of wake center
     
     % Save to external files for FAST usage (.wnd)
     % --- filename needs to be extended according to added dimensions to LUT ---
-    filename = ['inflowProfiles/' inflowSetName '/Inflow_C2C' num2str(yWake) '_TI'  num2str(TI)];
+    filename = ['inflowProfiles/' inflowSetName '/' inflowFilename(yWake)];
     writebladed(filename,(u_out-u_mean)/u_mean,v_out,w_out,x,y,z,u_mean);
     fid = fopen([filename, '.sum'], 'wt'); % Write .sum file
     fprintf(fid, 'T\tCLOCKWISE\n');
@@ -79,3 +78,4 @@ end;
 
 % Save workspace for future use
 save(['inflowProfiles/' inflowSetName '/workspace.mat']);
+disp('Finished generating inflow profiles.');
