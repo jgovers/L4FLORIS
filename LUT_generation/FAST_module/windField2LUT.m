@@ -2,13 +2,13 @@
 mlifeSettings   = 'calculate_DEL_v2.mlif';  % Mlife settings file
 
 % Load FAST
-% load('Controller_parameters');   % Load FAST settings
-% addpath(genpath('Source'))       %Load Path needed for execution of this code
-% addpath(genpath('slprj'))        %Load Path needed for execution of this code
-% addpath(genpath('subfunctions')) %Load Path needed for execution of this code
-% addpath(genpath('Data'))         %Load Path needed for execution of this code
-% addpath(genpath('Outputs'))      %Load Path needed for execution of this code
-% addpath('..');
+load('Controller_parameters');   % Load FAST settings
+addpath(genpath('Source'))       %Load Path needed for execution of this code
+addpath(genpath('slprj'))        %Load Path needed for execution of this code
+addpath(genpath('subfunctions')) %Load Path needed for execution of this code
+addpath(genpath('Data'))         %Load Path needed for execution of this code
+addpath(genpath('Outputs'))      %Load Path needed for execution of this code
+addpath('..');
 
 % Import inflow profiles
 T  = WS.inputData.T;  % simulation time in seconds
