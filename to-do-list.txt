@@ -1,0 +1,10 @@
+Required:
+- Add DEL LUT generation for no IPC, 1P IPC and 2P IPC. This should be easy.
+- Couple outputs from the new FLORIS model to inputs to the DEL LUT.
+- Validate code.
+
+Optional:
+- Rewrite optimizeL4FLORIS.m to have a separate cost function file. 
+  This should allow the use of off-the-shelf optimization algorithms 
+  in MATLAB, instead of solely the implemented GT approach.
+- Make more user-friendly..?
