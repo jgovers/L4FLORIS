@@ -1,14 +1,8 @@
 % Set up settings
 mlifeSettings   = 'calculate_DEL_v2.mlif';  % Mlife settings file
 
-% Load FAST
-load('Controller_parameters');   % Load FAST settings
-addpath(genpath('Source'))       %Load Path needed for execution of this code
-addpath(genpath('slprj'))        %Load Path needed for execution of this code
-addpath(genpath('subfunctions')) %Load Path needed for execution of this code
-addpath(genpath('Data'))         %Load Path needed for execution of this code
-addpath(genpath('Outputs'))      %Load Path needed for execution of this code
-addpath('..');
+% Load FAST path
+addpath(genpath('../FAST_module'))   %Load Path needed for execution of this code
 
 % Import inflow profiles
 T  = WS.inputData.T;  % simulation time in seconds
@@ -19,7 +13,10 @@ delete('wind.*'); % Delete existing wind files and overwrite new
 copyfile(['..\' filename '.wnd'],'wind.wnd');
 copyfile(['..\' filename '.sum'],'wind.sum');
 outputDirectory = [cd '\MLife_out\' filename];
-mkdir(outputDirectory);
+
+if ~exist('outputDirectory', 'dir')
+  mkdir('outputDirectory');
+end
 
 % Simulate Simulink
 sim('NREL5MW_Baseline_loads_2014b')  % Simulate FAST
