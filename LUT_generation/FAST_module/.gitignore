@@ -5,7 +5,6 @@
 *.m~
 
 # Compiled MEX binaries (all platforms)
-*.mex*
 backups*
 
 # Session info
