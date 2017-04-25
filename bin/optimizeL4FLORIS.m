@@ -1,4 +1,4 @@
-function[yaw_opt,J_Pws_opt,J_DEL_opt,J_sum_opt] = optimizeL4FLORIS(modelStruct,turbType,siteStruct,optimStruct,plotResults )
+function[yaw_opt,J_Pws_opt,J_DEL_opt,J_sum_opt] = optimizeL4FLORIS(modelStruct,turbType,siteStruct,optimStruct,plotResults,Pref)
 % Optimization parameters
 optConst   = optimStruct.optConst;
 iterations = optimStruct.iterations;
@@ -11,7 +11,7 @@ N          = size(siteStruct.LocIF,1); % Number of turbines
 windSpeed                = hypot(siteStruct.uInfIf,siteStruct.vInfIf); % Static Wind Speed [m/s]
 windDirection            = atand(siteStruct.vInfIf/siteStruct.uInfIf); % Nominal wind direction
 windInflowDistribution   = windDirection+optimStruct.windUncertainty;  % Uncertain wind directions
-weightsInflowUncertainty = gaussianWindDistribution(windInflowDistribution); % Weights for inflow
+weightsInflowUncertainty = gaussianWindDistribution(windInflowDistribution,plotResults); % Weights for inflow
 
 % Initialize empty GT-theory matrices
 [J_Pws_opt,J_sum_opt] = deal(-1e10);
@@ -69,7 +69,7 @@ for k = 1:iterations  % k is the number of iterations
     % Calculate collective results over entire wind rose
     sum_Ptot    = Ptot_inflows   * weightsInflowUncertainty;  % Inflow uncertainty-weighed generated power
     sum_DELtot  = DELtot_inflows * weightsInflowUncertainty;  % Inflow uncertainty-weighed turbine DEL values
-    sum_PDELtot = optConst*sum_Ptot/Pbaseline - (1-optConst)*sum_DELtot/DELbaseline; % Generate combined power and loads cost function
+    sum_PDELtot = 1-abs(Pref-sum_Ptot)/Pref;                  % Generate combined power and loads cost function
     
     if (sum_PDELtot >= J_sum_opt | k == 1)
         yaw_opt(k,:) = yaw;
