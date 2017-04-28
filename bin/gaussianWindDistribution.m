@@ -15,7 +15,8 @@ function [ Udir_weight_vector ] = gaussianWindDistribution(windDirectionsRange,p
     end
     Udir_weight_sum = sum(Udir_weight_vector);
     
-    if plotResults % Figure
+    % Figure
+    if plotResults 
         grid on
         hold on
         plot(x,norm)
